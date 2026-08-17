@@ -16,13 +16,21 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        bet: "bg-[image:var(--gradient-bet)] text-success-foreground shadow-[var(--shadow-card)] hover:brightness-110",
+        cashout:
+          "bg-[image:var(--gradient-cashout)] text-background shadow-[var(--shadow-card)] hover:brightness-110",
+        muted: "bg-secondary text-muted-foreground",
+        brand:
+          "bg-[image:var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-glow)] hover:brightness-110",
       },
       size: {
         default: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
+        bet: "min-h-[104px] flex-col gap-0.5 rounded-xl px-4 py-3",
       },
+
     },
     defaultVariants: {
       variant: "default",
