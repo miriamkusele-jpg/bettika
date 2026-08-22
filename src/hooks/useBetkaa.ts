@@ -119,6 +119,7 @@ export interface Account {
   session: Session | null;
   loading: boolean;
   username: string | null;
+  phone: string | null;
   cash: number;
   bonus: number;
   isAdmin: boolean;
@@ -129,6 +130,7 @@ export function useAccount(): Account {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [cash, setCash] = useState(0);
   const [bonus, setBonus] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -151,6 +153,7 @@ export function useAccount(): Account {
   useEffect(() => {
     if (!userId) {
       setUsername(null);
+      setPhone(null);
       setCash(0);
       setBonus(0);
       setIsAdmin(false);
@@ -160,12 +163,13 @@ export function useAccount(): Account {
 
     const load = async () => {
       const [profile, wallet, roles] = await Promise.all([
-        supabase.from("profiles").select("username").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("username, phone").eq("id", userId).maybeSingle(),
         supabase.from("wallets").select("cash_balance, bonus_balance").eq("user_id", userId).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId),
       ]);
       if (!alive) return;
       setUsername(profile.data?.username ?? null);
+      setPhone(profile.data?.phone ?? null);
       setCash(Number(wallet.data?.cash_balance ?? 0));
       setBonus(Number(wallet.data?.bonus_balance ?? 0));
       setIsAdmin((roles.data ?? []).some((r) => r.role === "admin"));
@@ -191,6 +195,7 @@ export function useAccount(): Account {
     session,
     loading,
     username,
+    phone,
     cash,
     bonus,
     isAdmin,
