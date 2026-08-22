@@ -94,6 +94,51 @@ export type Database = {
         }
         Relationships: []
       }
+      deposits: {
+        Row: {
+          amount: number
+          bonus_amount: number
+          checkout_request_id: string | null
+          created_at: string
+          id: string
+          merchant_request_id: string | null
+          mpesa_receipt: string | null
+          phone: string
+          result_desc: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bonus_amount?: number
+          checkout_request_id?: string | null
+          created_at?: string
+          id?: string
+          merchant_request_id?: string | null
+          mpesa_receipt?: string | null
+          phone: string
+          result_desc?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bonus_amount?: number
+          checkout_request_id?: string | null
+          created_at?: string
+          id?: string
+          merchant_request_id?: string | null
+          mpesa_receipt?: string | null
+          phone?: string
+          result_desc?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -223,11 +268,63 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawals: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          phone: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          phone?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_balance: {
+        Args: { _bonus: number; _cash: number; _note: string; _user_id: string }
+        Returns: undefined
+      }
+      admin_review_withdrawal: {
+        Args: { _approve: boolean; _id: string; _note: string }
+        Returns: undefined
+      }
+      admin_set_user_status: {
+        Args: { _status: string; _user_id: string }
+        Returns: undefined
+      }
+      attach_deposit_refs: {
+        Args: { _checkout: string; _deposit_id: string; _merchant: string }
+        Returns: undefined
+      }
       bootstrap_account: {
         Args: { _phone: string; _username: string }
         Returns: undefined
@@ -255,6 +352,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_deposit: {
+        Args: { _amount: number; _phone: string }
+        Returns: {
+          amount: number
+          bonus_amount: number
+          checkout_request_id: string | null
+          created_at: string
+          id: string
+          merchant_request_id: string | null
+          mpesa_receipt: string | null
+          phone: string
+          result_desc: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deposits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      credit_deposit: {
+        Args: { _checkout: string; _receipt: string }
+        Returns: undefined
+      }
       ensure_current_round: {
         Args: never
         Returns: {
@@ -272,6 +396,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      fail_deposit: {
+        Args: { _checkout: string; _reason: string }
+        Returns: undefined
       }
       gen_crash: { Args: never; Returns: number }
       has_role: {
@@ -300,6 +428,26 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "bets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_withdrawal: {
+        Args: { _amount: number; _phone: string }
+        Returns: {
+          admin_note: string | null
+          amount: number
+          created_at: string
+          id: string
+          phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "withdrawals"
           isOneToOne: true
           isSetofReturn: false
         }
