@@ -1,0 +1,10 @@
+REVOKE ALL ON FUNCTION public.create_deposit(numeric, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.request_withdrawal(numeric, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.admin_review_withdrawal(uuid, boolean, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.admin_adjust_balance(uuid, numeric, numeric, text) FROM public, anon;
+REVOKE ALL ON FUNCTION public.admin_set_user_status(uuid, text) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.create_deposit(numeric, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.request_withdrawal(numeric, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_review_withdrawal(uuid, boolean, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_adjust_balance(uuid, numeric, numeric, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_set_user_status(uuid, text) TO authenticated;
