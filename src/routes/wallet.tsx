@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useState } from "react";
 
+import { MoneySheet } from "@/components/betkaa/MoneySheet";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/useBetkaa";
@@ -15,10 +15,13 @@ export const Route = createFileRoute("/wallet")({
       {
         name: "description",
         content:
-          "Your BETKAA wallet: cash balance, bonus balance, total balance and a full ledger of every movement.",
+          "Your BETKAA wallet: M-PESA deposits with a 100% bonus, withdrawals, cash and bonus balances and a full ledger.",
       },
       { property: "og:title", content: "Wallet — BETKAA" },
-      { property: "og:description", content: "Cash, bonus and total balance with a full ledger." },
+      {
+        property: "og:description",
+        content: "M-PESA deposits, withdrawals and a full ledger of every movement.",
+      },
     ],
   }),
   component: WalletPage,
@@ -34,29 +37,70 @@ interface Entry {
   created_at: string;
 }
 
+interface DepositRow {
+  id: string;
+  amount: number;
+  bonus_amount: number;
+  status: string;
+  mpesa_receipt: string | null;
+  result_desc: string | null;
+  created_at: string;
+}
+
+interface WithdrawalRow {
+  id: string;
+  amount: number;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+}
+
+const statusTone: Record<string, string> = {
+  success: "text-money",
+  paid: "text-money",
+  pending: "text-amber-400",
+  failed: "text-primary",
+  rejected: "text-primary",
+};
+
 function WalletPage() {
-  const { session, cash, bonus, loading } = useAccount();
+  const { session, phone, cash, bonus, loading, refresh } = useAccount();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [deposits, setDeposits] = useState<DepositRow[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
+  const [mode, setMode] = useState<"deposit" | "withdraw" | null>(null);
   const userId = session?.user.id ?? null;
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!userId) return;
-    let alive = true;
-    const load = async () => {
-      const { data } = await supabase
+    const [ledger, dep, wd] = await Promise.all([
+      supabase
         .from("wallet_ledger")
         .select("id, entry_type, cash_delta, bonus_delta, cash_after, reference, created_at")
         .order("created_at", { ascending: false })
-        .limit(50);
-      if (alive && data) setEntries(data as unknown as Entry[]);
-    };
-    void load();
-    const timer = setInterval(load, 5000);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
+        .limit(50),
+      supabase
+        .from("deposits")
+        .select("id, amount, bonus_amount, status, mpesa_receipt, result_desc, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("withdrawals")
+        .select("id, amount, status, admin_note, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+    setEntries((ledger.data ?? []) as unknown as Entry[]);
+    setDeposits((dep.data ?? []) as unknown as DepositRow[]);
+    setWithdrawals((wd.data ?? []) as unknown as WithdrawalRow[]);
   }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    void load();
+    const timer = setInterval(() => void load(), 5000);
+    return () => clearInterval(timer);
+  }, [userId, load]);
 
   return (
     <main className="mx-auto w-full max-w-md px-4 pt-4 pb-12">
@@ -74,7 +118,7 @@ function WalletPage() {
       ) : (
         <>
           <section className="rounded-2xl bg-surface p-4 shadow-[var(--shadow-card)]">
-            <p className="text-xs tracking-wide text-muted-foreground uppercase">Total balance</p>
+            <h1 className="text-xs tracking-wide text-muted-foreground uppercase">Total balance</h1>
             <p className="text-4xl font-black text-money tabular-nums">
               {formatKes(cash + bonus)} <span className="text-lg text-muted-foreground">KES</span>
             </p>
@@ -89,18 +133,10 @@ function WalletPage() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <Button
-                variant="bet"
-                className="h-11"
-                onClick={() => toast.info("M-PESA deposits arrive in the next phase")}
-              >
+              <Button variant="bet" className="h-11" onClick={() => setMode("deposit")}>
                 <ArrowDownToLine /> DEPOSIT
               </Button>
-              <Button
-                variant="secondary"
-                className="h-11"
-                onClick={() => toast.info("Withdrawals arrive in the next phase")}
-              >
+              <Button variant="secondary" className="h-11" onClick={() => setMode("withdraw")}>
                 <ArrowUpFromLine /> WITHDRAW
               </Button>
             </div>
@@ -110,10 +146,73 @@ function WalletPage() {
             <h2 className="text-sm font-semibold">100% deposit bonus</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Deposit KES 500 or more and get a 100% bonus — KES 500 in becomes KES 1,000 to play
-              with. Cash and bonus balances stay separate and the bonus is only credited after a
-              confirmed payment.
+              with. Bonus funds are used only after cash and can't be withdrawn.
             </p>
           </section>
+
+          {deposits.length > 0 && (
+            <section className="mt-4 rounded-2xl bg-surface p-4">
+              <h2 className="mb-2 text-sm font-semibold">M-PESA deposits</h2>
+              <ul className="divide-y divide-border/40">
+                {deposits.map((d) => (
+                  <li
+                    key={d.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2 text-sm"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-semibold tabular-nums">
+                        {formatKes(Number(d.amount))} KES
+                        {Number(d.bonus_amount) > 0 && (
+                          <span className="ml-1 text-xs text-money">
+                            +{formatKes(Number(d.bonus_amount))} bonus
+                          </span>
+                        )}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {new Date(d.created_at).toLocaleString()}
+                        {d.mpesa_receipt ? ` · ${d.mpesa_receipt}` : ""}
+                        {d.status === "failed" && d.result_desc ? ` · ${d.result_desc}` : ""}
+                      </span>
+                    </span>
+                    <span
+                      className={`shrink-0 text-xs font-semibold uppercase ${statusTone[d.status] ?? "text-muted-foreground"}`}
+                    >
+                      {d.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {withdrawals.length > 0 && (
+            <section className="mt-4 rounded-2xl bg-surface p-4">
+              <h2 className="mb-2 text-sm font-semibold">Withdrawal requests</h2>
+              <ul className="divide-y divide-border/40">
+                {withdrawals.map((w) => (
+                  <li
+                    key={w.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2 text-sm"
+                  >
+                    <span className="min-w-0">
+                      <span className="block font-semibold tabular-nums">
+                        {formatKes(Number(w.amount))} KES
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {new Date(w.created_at).toLocaleString()}
+                        {w.admin_note ? ` · ${w.admin_note}` : ""}
+                      </span>
+                    </span>
+                    <span
+                      className={`shrink-0 text-xs font-semibold uppercase ${statusTone[w.status] ?? "text-muted-foreground"}`}
+                    >
+                      {w.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="mt-4 rounded-2xl bg-surface p-4">
             <h2 className="mb-2 text-sm font-semibold">Wallet ledger</h2>
@@ -133,7 +232,8 @@ function WalletPage() {
                         {e.entry_type.replace(/_/g, " ")}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {new Date(e.created_at).toLocaleString()} {e.reference ? `· ${e.reference}` : ""}
+                        {new Date(e.created_at).toLocaleString()}{" "}
+                        {e.reference ? `· ${e.reference}` : ""}
                       </span>
                     </span>
                     <span
@@ -151,6 +251,17 @@ function WalletPage() {
               })}
             </ul>
           </section>
+
+          <MoneySheet
+            mode={mode}
+            onClose={() => setMode(null)}
+            defaultPhone={phone ?? ""}
+            cash={cash}
+            onDone={() => {
+              refresh();
+              void load();
+            }}
+          />
         </>
       )}
     </main>
