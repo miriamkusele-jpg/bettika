@@ -85,7 +85,13 @@ export async function stkPush(args: {
 
   if (!res.ok || !body?.CheckoutRequestID) {
     console.error("[mpesa] stk push failed", res.status, body?.errorMessage);
-    throw new Error(body?.errorMessage ?? "M-PESA rejected the payment request.");
+    const msg = body?.errorMessage ?? "M-PESA rejected the payment request.";
+    if (/invalid access token/i.test(msg)) {
+      throw new Error(
+        "M-PESA rejected our credentials. Check that the consumer key, secret, shortcode and passkey all belong to the same Daraja app and environment.",
+      );
+    }
+    throw new Error(msg);
   }
 
   return {
