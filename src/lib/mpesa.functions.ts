@@ -26,51 +26,52 @@ export const startMpesaDeposit = createServerFn({ method: "POST" })
     const row = (Array.isArray(deposit) ? deposit[0] : deposit) as { id: string } | null;
     if (!row) throw new Error("Could not start the deposit");
 
-    const { stkPush, MpesaError, newCorrelationId, mpesaHost, mpesaEnv } = await import(
-      "./mpesa.server"
-    );
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { runDepositPush } = await import("./mpesa.server");
+    return runDepositPush({
+      depositId: row.id,
+      phone: data.phone,
+      amount: data.amount,
+      attempt: 1,
+      callbackUrl: process.env["MPESA_CALLBACK_URL"] ?? DEFAULT_CALLBACK,
+    });
+  });
+
+/**
+ * Re-sends the M-PESA prompt for a deposit the player already created.
+ * `retry_deposit` refuses deposits that were already paid and refuses while a
+ * prompt is still live, and credits only ever come from the Daraja callback —
+ * so retrying cannot produce a duplicate wallet credit.
+ */
+export const retryMpesaDeposit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { depositId: string }) => {
+    const depositId = String(input.depositId);
+    if (!/^[0-9a-f-]{36}$/i.test(depositId)) throw new Error("Invalid deposit reference");
+    return { depositId };
+  })
+  .handler(async ({ data, context }) => {
+    const { newCorrelationId, runDepositPush } = await import("./mpesa.server");
     const correlationId = newCorrelationId();
 
-    try {
-      const push = await stkPush({
-        phone: data.phone,
-        amount: data.amount,
-        reference: row.id,
-        callbackUrl: process.env["MPESA_CALLBACK_URL"] ?? DEFAULT_CALLBACK,
-        correlationId,
-      });
-      await supabaseAdmin.rpc("attach_deposit_refs", {
-        _deposit_id: row.id,
-        _checkout: push.checkoutRequestId,
-        _merchant: push.merchantRequestId,
-      });
-      return {
-        depositId: row.id,
-        message: push.customerMessage,
-        correlationId: push.correlationId,
-      };
-    } catch (e) {
-      const detail =
-        e instanceof MpesaError
-          ? e.detail
-          : {
-              message: e instanceof Error ? e.message : "M-PESA request failed",
-              correlationId,
-              host: mpesaHost(),
-              environment: mpesaEnv(),
-              stage: "stk_push" as const,
-            };
-      await supabaseAdmin
-        .from("deposits")
-        .update({
-          status: "failed",
-          result_desc: `${detail.message} [ref ${detail.correlationId} · ${detail.environment} · ${detail.host}]`,
-        })
-        .eq("id", row.id);
-      // Plain Error so the detail crosses the RPC boundary as a readable message.
-      throw new Error(
-        `${detail.message}\nRef ${detail.correlationId} · ${detail.environment} · ${detail.host}`,
-      );
-    }
+    // RLS scopes this to the caller's own deposits.
+    const { data: reopened, error } = await context.supabase.rpc("retry_deposit", {
+      _deposit_id: data.depositId,
+      _correlation: correlationId,
+    });
+    if (error) throw new Error(error.message);
+    const row = (Array.isArray(reopened) ? reopened[0] : reopened) as {
+      id: string;
+      phone: string;
+      amount: number;
+      attempts: number;
+    } | null;
+    if (!row) throw new Error("Could not reopen this deposit");
+
+    return runDepositPush({
+      depositId: row.id,
+      phone: row.phone,
+      amount: Number(row.amount),
+      attempt: Number(row.attempts),
+      callbackUrl: process.env["MPESA_CALLBACK_URL"] ?? DEFAULT_CALLBACK,
+    });
   });
