@@ -182,3 +182,71 @@ export async function stkPush(args: {
     correlationId,
   };
 }
+
+export interface DepositPushOutcome {
+  depositId: string;
+  message: string;
+  correlationId: string;
+  attempt: number;
+}
+
+/**
+ * Sends the STK prompt for an existing deposit intent and records the attempt.
+ * Wallet credits happen only in `credit_deposit` from the Daraja callback, so
+ * repeating this for the same deposit can never double-credit a player.
+ */
+export async function runDepositPush(args: {
+  depositId: string;
+  phone: string;
+  amount: number;
+  attempt: number;
+  callbackUrl: string;
+}): Promise<DepositPushOutcome> {
+  const correlationId = newCorrelationId();
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin
+    .from("deposits")
+    .update({ correlation_id: correlationId })
+    .eq("id", args.depositId);
+
+  try {
+    const push = await stkPush({
+      phone: args.phone,
+      amount: args.amount,
+      reference: args.depositId,
+      callbackUrl: args.callbackUrl,
+      correlationId,
+    });
+    await supabaseAdmin.rpc("attach_deposit_refs", {
+      _deposit_id: args.depositId,
+      _checkout: push.checkoutRequestId,
+      _merchant: push.merchantRequestId,
+    });
+    return {
+      depositId: args.depositId,
+      message: push.customerMessage,
+      correlationId: push.correlationId,
+      attempt: args.attempt,
+    };
+  } catch (e) {
+    const detail: MpesaErrorDetail =
+      e instanceof MpesaError
+        ? e.detail
+        : {
+            message: e instanceof Error ? e.message : "M-PESA request failed",
+            correlationId,
+            host: mpesaHost(),
+            environment: mpesaEnv(),
+            stage: "stk_push",
+          };
+    const suffix = `[ref ${detail.correlationId} · attempt ${args.attempt} · ${detail.environment} · ${detail.host}]`;
+    await supabaseAdmin
+      .from("deposits")
+      .update({ status: "failed", result_desc: `${detail.message} ${suffix}` })
+      .eq("id", args.depositId);
+    // Plain Error so the detail crosses the RPC boundary as a readable message.
+    throw new Error(
+      `${detail.message}\nRef ${detail.correlationId} · attempt ${args.attempt} · ${detail.environment} · ${detail.host}`,
+    );
+  }
+}
