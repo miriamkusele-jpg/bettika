@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/public/mpesa/callback")({
           const receipt = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
           const { error } = await supabaseAdmin.rpc("credit_deposit", {
             _checkout: checkout,
-            _receipt: receipt ? String(receipt) : null,
+            _receipt: receipt ? String(receipt) : "",
           });
           if (error) console.error("[mpesa] credit failed", error.message);
         } else {
