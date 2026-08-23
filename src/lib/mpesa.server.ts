@@ -1,6 +1,12 @@
 /** Safaricom Daraja (M-PESA) helpers — server only. */
 
-const BASE = "https://api.safaricom.co.ke";
+/** Daraja has separate hosts for sandbox and live. Credentials only work on their own host. */
+function base(): string {
+  const env = (process.env["MPESA_ENV"] ?? "production").toLowerCase();
+  return env.startsWith("sand")
+    ? "https://sandbox.safaricom.co.ke"
+    : "https://api.safaricom.co.ke";
+}
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -20,7 +26,7 @@ export async function getAccessToken(): Promise<string> {
   const key = requireEnv("MPESA_CONSUMER_KEY");
   const secret = requireEnv("MPESA_CONSUMER_SECRET");
   const basic = btoa(`${key}:${secret}`);
-  const res = await fetch(`${BASE}/oauth/v1/generate?grant_type=client_credentials`, {
+  const res = await fetch(`${base()}/oauth/v1/generate?grant_type=client_credentials`, {
     headers: { Authorization: `Basic ${basic}` },
   });
   const body = (await res.json().catch(() => null)) as { access_token?: string } | null;
@@ -49,7 +55,7 @@ export async function stkPush(args: {
   const password = btoa(`${shortcode}${passkey}${timestamp}`);
   const token = await getAccessToken();
 
-  const res = await fetch(`${BASE}/mpesa/stkpush/v1/processrequest`, {
+  const res = await fetch(`${base()}/mpesa/stkpush/v1/processrequest`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: JSON.stringify({
@@ -79,7 +85,13 @@ export async function stkPush(args: {
 
   if (!res.ok || !body?.CheckoutRequestID) {
     console.error("[mpesa] stk push failed", res.status, body?.errorMessage);
-    throw new Error(body?.errorMessage ?? "M-PESA rejected the payment request.");
+    const msg = body?.errorMessage ?? "M-PESA rejected the payment request.";
+    if (/invalid access token/i.test(msg)) {
+      throw new Error(
+        "M-PESA rejected our credentials. Check that the consumer key, secret, shortcode and passkey all belong to the same Daraja app and environment.",
+      );
+    }
+    throw new Error(msg);
   }
 
   return {
