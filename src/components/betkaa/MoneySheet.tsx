@@ -59,7 +59,11 @@ export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props)
       onDone();
       onClose();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      const raw = e instanceof Error ? e.message : "Something went wrong";
+      const [headline, ...rest] = raw.split("\n");
+      toast.error(headline || "Something went wrong", {
+        ...(rest.length ? { description: rest.join(" ") } : {}),
+      });
     } finally {
       setBusy(false);
     }
