@@ -26,7 +26,7 @@ export async function getAccessToken(): Promise<string> {
   const key = requireEnv("MPESA_CONSUMER_KEY");
   const secret = requireEnv("MPESA_CONSUMER_SECRET");
   const basic = btoa(`${key}:${secret}`);
-  const res = await fetch(`${BASE}/oauth/v1/generate?grant_type=client_credentials`, {
+  const res = await fetch(`${base()}/oauth/v1/generate?grant_type=client_credentials`, {
     headers: { Authorization: `Basic ${basic}` },
   });
   const body = (await res.json().catch(() => null)) as { access_token?: string } | null;
@@ -55,7 +55,7 @@ export async function stkPush(args: {
   const password = btoa(`${shortcode}${passkey}${timestamp}`);
   const token = await getAccessToken();
 
-  const res = await fetch(`${BASE}/mpesa/stkpush/v1/processrequest`, {
+  const res = await fetch(`${base()}/mpesa/stkpush/v1/processrequest`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: JSON.stringify({
