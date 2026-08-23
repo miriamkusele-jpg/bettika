@@ -1,6 +1,12 @@
 /** Safaricom Daraja (M-PESA) helpers — server only. */
 
-const BASE = "https://api.safaricom.co.ke";
+/** Daraja has separate hosts for sandbox and live. Credentials only work on their own host. */
+function base(): string {
+  const env = (process.env["MPESA_ENV"] ?? "production").toLowerCase();
+  return env.startsWith("sand")
+    ? "https://sandbox.safaricom.co.ke"
+    : "https://api.safaricom.co.ke";
+}
 
 function requireEnv(name: string): string {
   const value = process.env[name];
