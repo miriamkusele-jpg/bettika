@@ -94,11 +94,57 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_attempts: {
+        Row: {
+          attempt: number
+          checkout_request_id: string | null
+          correlation_id: string | null
+          created_at: string
+          deposit_id: string
+          error_message: string | null
+          id: string
+          merchant_request_id: string | null
+          phone: string
+        }
+        Insert: {
+          attempt: number
+          checkout_request_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          deposit_id: string
+          error_message?: string | null
+          id?: string
+          merchant_request_id?: string | null
+          phone: string
+        }
+        Update: {
+          attempt?: number
+          checkout_request_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          deposit_id?: string
+          error_message?: string | null
+          id?: string
+          merchant_request_id?: string | null
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposit_attempts_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "deposits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deposits: {
         Row: {
           amount: number
+          attempts: number
           bonus_amount: number
           checkout_request_id: string | null
+          correlation_id: string | null
           created_at: string
           id: string
           merchant_request_id: string | null
@@ -111,8 +157,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          attempts?: number
           bonus_amount?: number
           checkout_request_id?: string | null
+          correlation_id?: string | null
           created_at?: string
           id?: string
           merchant_request_id?: string | null
@@ -125,8 +173,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          attempts?: number
           bonus_amount?: number
           checkout_request_id?: string | null
+          correlation_id?: string | null
           created_at?: string
           id?: string
           merchant_request_id?: string | null
@@ -356,8 +406,10 @@ export type Database = {
         Args: { _amount: number; _phone: string }
         Returns: {
           amount: number
+          attempts: number
           bonus_amount: number
           checkout_request_id: string | null
+          correlation_id: string | null
           created_at: string
           id: string
           merchant_request_id: string | null
@@ -448,6 +500,31 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "withdrawals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      retry_deposit: {
+        Args: { _correlation: string; _deposit_id: string }
+        Returns: {
+          amount: number
+          attempts: number
+          bonus_amount: number
+          checkout_request_id: string | null
+          correlation_id: string | null
+          created_at: string
+          id: string
+          merchant_request_id: string | null
+          mpesa_receipt: string | null
+          phone: string
+          result_desc: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "deposits"
           isOneToOne: true
           isSetofReturn: false
         }
