@@ -6,6 +6,7 @@ import { BetCard } from "@/components/betkaa/BetCard";
 import { BetFeed } from "@/components/betkaa/BetFeed";
 import { ChatPanel } from "@/components/betkaa/ChatPanel";
 import { GameCanvas } from "@/components/betkaa/GameCanvas";
+import { LiveBanner } from "@/components/betkaa/LiveBanner";
 import { HistoryBar } from "@/components/betkaa/HistoryBar";
 import { TopBar } from "@/components/betkaa/TopBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,6 +100,8 @@ function GamePage() {
           toast.success("Signed out");
         }}
       />
+
+      <LiveBanner />
 
       <HistoryBar history={history} />
 
