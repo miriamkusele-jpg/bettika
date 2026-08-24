@@ -99,7 +99,7 @@ export function GameCanvas({ phase, multiplier, countdown, elapsed }: Props) {
           width={1024}
           height={640}
           className={cn(
-            "pointer-events-none absolute w-[38%] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_6px_18px_oklch(0_0_0/60%)]",
+            "pointer-events-none absolute w-[34%] -translate-x-1/2 -translate-y-1/2 scale-x-[-1] select-none drop-shadow-[0_6px_18px_oklch(0_0_0/60%)]",
             phase === "running" ? "bk-plane-hover" : "bk-plane-crash",
           )}
           style={{ left: `${x}%`, top: `${y}%` }}
