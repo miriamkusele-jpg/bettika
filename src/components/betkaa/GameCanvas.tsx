@@ -43,14 +43,14 @@ export function GameCanvas({ phase, multiplier, countdown, elapsed }: Props) {
           </defs>
           <path
             d={`M 0 100 Q ${x * 0.55} 100 ${x} ${y + 6} L ${x} 100 Z`}
-            fill="url(#bk-trail)"
-            opacity={phase === "crashed" ? 0.45 : 1}
+            fill="var(--brand)"
+            opacity={phase === "crashed" ? 0.4 : 0.95}
           />
           <path
             d={`M 0 100 Q ${x * 0.55} 100 ${x} ${y + 6}`}
             fill="none"
             stroke="var(--brand)"
-            strokeWidth="1.4"
+            strokeWidth="2"
             strokeLinecap="round"
           />
         </svg>
