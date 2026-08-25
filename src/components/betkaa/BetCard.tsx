@@ -23,6 +23,7 @@ interface Props {
   signedIn: boolean;
   onPlace: (slot: 1 | 2, amount: number, autoCashout: number | null) => void;
   onCashOut: (betId: string) => void;
+  onCancel: (betId: string) => void;
   onRequireAuth: () => void;
 }
 
@@ -35,6 +36,7 @@ export function BetCard({
   signedIn,
   onPlace,
   onCashOut,
+  onCancel,
   onRequireAuth,
 }: Props) {
   const [mode, setMode] = useState<"bet" | "auto">(slot === 1 ? "bet" : "bet");
@@ -65,6 +67,7 @@ export function BetCard({
   const handleMain = () => {
     if (!signedIn) return onRequireAuth();
     if (active && phase === "running") return onCashOut(bet.id);
+    if (active && phase === "waiting") return onCancel(bet.id);
     if (!bet && phase === "waiting") {
       onPlace(slot, amount, mode === "auto" && autoCashOut && target > 1 ? target : null);
     }
@@ -72,16 +75,16 @@ export function BetCard({
 
   let label = "Bet";
   let sub = `${formatAmount(amount)} KES`;
-  let variant: "bet" | "cashout" | "waiting" = "bet";
+  let variant: "bet" | "cashout" | "cancel" | "waiting" = "bet";
 
   if (active && phase === "running") {
     label = "Cash Out";
     sub = `${formatKes(bet.amount * multiplier)} KES`;
     variant = "cashout";
   } else if (active && phase === "waiting") {
-    label = "Waiting";
-    sub = `${formatAmount(bet.amount)} KES placed`;
-    variant = "waiting";
+    label = "Cancel";
+    sub = "";
+    variant = "cancel";
   } else if (bet && bet.status === "won") {
     label = "Cashed Out";
     sub = `+${formatKes(bet.payout)} KES`;
@@ -159,13 +162,21 @@ export function BetCard({
 
         <Button
           type="button"
-          variant={variant === "cashout" ? "cashout" : variant === "waiting" ? "muted" : "bet"}
+          variant={
+            variant === "cashout"
+              ? "cashout"
+              : variant === "cancel"
+                ? "destructive"
+                : variant === "waiting"
+                  ? "muted"
+                  : "bet"
+          }
           size="bet"
           disabled={disabled}
           onClick={handleMain}
         >
           <span className="text-xl leading-tight font-medium">{label}</span>
-          <span className="text-lg leading-tight font-semibold">{sub}</span>
+          {sub && <span className="text-lg leading-tight font-semibold">{sub}</span>}
         </Button>
       </div>
 
