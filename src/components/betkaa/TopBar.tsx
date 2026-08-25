@@ -52,7 +52,7 @@ export function TopBar({ balance, username, signedIn, isAdmin, onOpenChat, onSig
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-background px-3 py-2.5">
         <Link to="/" className="min-w-0">
-          <span className="bk-brand-text text-2xl font-black tracking-tight italic">BETKAA</span>
+          <span className="bk-brand-text text-2xl font-black tracking-tight italic">Aviator</span>
         </Link>
         <div className="flex shrink-0 items-center gap-3">
           <span className="text-base font-bold text-money tabular-nums">

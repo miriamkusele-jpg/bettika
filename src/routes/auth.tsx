@@ -11,16 +11,16 @@ import { normalizeKenyanPhone, phoneToEmail } from "@/lib/betkaa";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in or register — BETKAA" },
+      { title: "Sign in or register — Aviator" },
       {
         name: "description",
         content:
-          "Create your BETKAA account with just a mobile number and password — no OTP needed — and join the live crash game.",
+          "Create your Aviator account with just a mobile number and password — no OTP needed — and join the live crash game.",
       },
-      { property: "og:title", content: "Sign in or register — BETKAA" },
+      { property: "og:title", content: "Sign in or register — Aviator" },
       {
         property: "og:description",
-        content: "Mobile-number registration for the BETKAA live crash game.",
+        content: "Mobile-number registration for the Aviator live crash game.",
       },
     ],
   }),
@@ -80,7 +80,7 @@ function AuthPage() {
         toast.error(bootstrapError.message);
         return;
       }
-      toast.success("Welcome to BETKAA!");
+      toast.success("Welcome to Aviator!");
       void navigate({ to: "/" });
       return;
     }
@@ -97,7 +97,7 @@ function AuthPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-5 py-10">
       <Link to="/" className="mb-6 text-center">
-        <span className="bk-brand-text text-4xl font-black tracking-tight italic">BETKAA</span>
+        <span className="bk-brand-text text-4xl font-black tracking-tight italic">Aviator</span>
       </Link>
 
       <div className="rounded-2xl bg-surface p-5 shadow-[var(--shadow-card)]">
@@ -177,7 +177,7 @@ function AuthPage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        18+. Play responsibly. BETKAA is an original demo platform — balances are play money until
+        18+. Play responsibly. Aviator is an original demo platform — balances are play money until
         M-PESA deposits are enabled.
       </p>
     </main>

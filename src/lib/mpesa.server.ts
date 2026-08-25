@@ -145,8 +145,8 @@ export async function stkPush(args: {
         PartyB: shortcode,
         PhoneNumber: args.phone,
         CallBackURL: args.callbackUrl,
-        AccountReference: "BETKAA",
-        TransactionDesc: `BETKAA deposit ${args.reference}`,
+        AccountReference: "Aviator",
+        TransactionDesc: `Aviator deposit ${args.reference}`,
       }),
     });
   } catch {

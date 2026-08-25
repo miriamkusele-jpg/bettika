@@ -95,7 +95,7 @@ export function GameCanvas({ phase, multiplier, countdown, elapsed }: Props) {
       {phase !== "waiting" && (
         <img
           src={planeSrc}
-          alt="BETKAA aircraft climbing along the multiplier curve"
+          alt="Aviator aircraft climbing along the multiplier curve"
           width={1024}
           height={640}
           className={cn(
