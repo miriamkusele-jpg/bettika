@@ -1,14 +1,24 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ChevronLeft, Maximize, MessageCircle, Menu } from "lucide-react";
+import {
+  ChevronLeft,
+  Fan,
+  Maximize,
+  MessageCircle,
+  Menu,
+  Music,
+  UserRound,
+  Volume2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import { formatKes } from "@/lib/betkaa";
 
 interface Props {
@@ -20,14 +30,61 @@ interface Props {
   onSignOut: () => void;
 }
 
+/** 254722123910 -> 254722XXX910 */
+function maskPhone(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 9) return value;
+  return `${digits.slice(0, 6)}XXX${digits.slice(-3)}`;
+}
+
+const PREFS = ["sound", "music", "animation"] as const;
+type Pref = (typeof PREFS)[number];
+
+function usePrefs() {
+  const [prefs, setPrefs] = useState<Record<Pref, boolean>>({
+    sound: false,
+    music: false,
+    animation: true,
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("aviator:prefs");
+      if (raw) setPrefs((p) => ({ ...p, ...(JSON.parse(raw) as Record<Pref, boolean>) }));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const toggle = (key: Pref, value: boolean) =>
+    setPrefs((prev) => {
+      const next = { ...prev, [key]: value };
+      try {
+        localStorage.setItem("aviator:prefs", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+
+  return { prefs, toggle };
+}
+
 export function TopBar({ balance, username, signedIn, isAdmin, onOpenChat, onSignOut }: Props) {
   const router = useRouter();
+  const { prefs, toggle } = usePrefs();
 
   const goFullscreen = () => {
     const el = document.documentElement;
     if (document.fullscreenElement) void document.exitFullscreen();
     else void el.requestFullscreen?.().catch(() => undefined);
   };
+
+  const rows: { key: Pref; label: string; icon: typeof Volume2 }[] = [
+    { key: "sound", label: "Sound", icon: Volume2 },
+    { key: "music", label: "Music", icon: Music },
+    { key: "animation", label: "Animation", icon: Fan },
+  ];
 
   return (
     <header className="sticky top-0 z-30 bg-chrome/95 backdrop-blur">
@@ -62,9 +119,32 @@ export function TopBar({ balance, username, signedIn, isAdmin, onOpenChat, onSig
             <DropdownMenuTrigger aria-label="Menu" className="p-1 text-foreground">
               <Menu className="size-5" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel className="truncate">{username ?? "Guest player"}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-72 p-0">
+              <div className="flex items-center gap-3 bg-surface-2 p-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-400 to-rose-500">
+                  <UserRound className="size-5 text-background" />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-base font-bold">
+                  {username ? maskPhone(username) : "Guest player"}
+                </span>
+              </div>
+
+              {rows.map((row) => (
+                <div
+                  key={row.key}
+                  className="flex items-center gap-3 border-t border-border/50 px-3 py-2.5"
+                >
+                  <row.icon className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate text-sm">{row.label}</span>
+                  <Switch
+                    checked={prefs[row.key]}
+                    onCheckedChange={(v) => toggle(row.key, v)}
+                    aria-label={`Toggle ${row.label}`}
+                  />
+                </div>
+              ))}
+
+              <DropdownMenuSeparator className="my-0" />
               <DropdownMenuItem asChild>
                 <Link to="/wallet">Wallet</Link>
               </DropdownMenuItem>
