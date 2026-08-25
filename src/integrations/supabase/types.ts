@@ -420,6 +420,7 @@ export type Database = {
         Args: { _phone: string; _username: string }
         Returns: undefined
       }
+      cancel_bet: { Args: { _bet_id: string }; Returns: undefined }
       cash_out: {
         Args: { _bet_id: string }
         Returns: {
