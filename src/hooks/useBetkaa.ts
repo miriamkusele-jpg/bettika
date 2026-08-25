@@ -26,12 +26,11 @@ export function useRoundSync() {
     };
 
     const loadHistory = async () => {
-      const { data } = await supabase
-        .from("rounds")
-        .select("crash_multiplier")
-        .order("id", { ascending: false })
-        .limit(24);
-      if (alive && data) setHistory(data.map((r) => Number(r.crash_multiplier)));
+      const { data } = await supabase.rpc("round_history", { _limit: 24 });
+      if (alive && data)
+        setHistory(
+          (data as { crash_multiplier: number }[]).map((r) => Number(r.crash_multiplier)),
+        );
     };
 
     const pull = async () => {
@@ -42,7 +41,11 @@ export function useRoundSync() {
       if (row) {
         setRound((prev) => {
           if (prev && prev.id !== row.id) void loadHistory();
-          return { ...row, crash_multiplier: Number(row.crash_multiplier) };
+          return {
+            ...row,
+            crash_multiplier:
+              row.crash_multiplier === null ? null : Number(row.crash_multiplier),
+          };
         });
       }
     };

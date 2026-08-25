@@ -1,4 +1,4 @@
-/** BETKAA shared game math, formatting and phone helpers (client-safe). */
+/** Aviator shared game math, formatting and phone helpers (client-safe). */
 
 /** Multiplier curve constant — MUST match public.round_multiplier in the database. */
 export const GROWTH = 0.09;
@@ -10,7 +10,8 @@ export type Phase = "waiting" | "running" | "crashed";
 
 export interface Round {
   id: number;
-  crash_multiplier: number;
+  /** Hidden from players until the plane flies away (admins read it separately). */
+  crash_multiplier: number | null;
   waiting_at: string;
   running_at: string;
   crashed_at: string;
@@ -51,18 +52,19 @@ export function roundState(round: Round | null, nowMs: number) {
       elapsed: 0,
     };
   }
+  const crashPoint = round.crash_multiplier ?? multiplierAt((crashed - running) / 1000);
   if (nowMs < crashed) {
     const elapsed = (nowMs - running) / 1000;
     return {
       phase: "running" as Phase,
-      multiplier: Math.min(multiplierAt(elapsed), round.crash_multiplier),
+      multiplier: Math.min(multiplierAt(elapsed), crashPoint),
       countdown: 0,
       elapsed,
     };
   }
   return {
     phase: "crashed" as Phase,
-    multiplier: round.crash_multiplier,
+    multiplier: crashPoint,
     countdown: 0,
     elapsed: (crashed - running) / 1000,
   };
