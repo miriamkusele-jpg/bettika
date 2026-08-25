@@ -10,6 +10,34 @@ interface Props {
   previous: Bet[];
 }
 
+/** Players are shown masked, exactly like the reference feed: 2***4 */
+function maskPlayer(name: string): string {
+  const digits = name.replace(/\D/g, "");
+  if (digits.length >= 4) return `${digits[0]}***${digits[digits.length - 1]}`;
+  return `${name.slice(0, 1)}***${name.slice(-1)}`;
+}
+
+const AVATARS = [
+  "from-amber-400 to-pink-500",
+  "from-sky-400 to-indigo-500",
+  "from-emerald-400 to-teal-600",
+  "from-fuchsia-400 to-purple-600",
+  "from-orange-400 to-rose-500",
+  "from-lime-400 to-green-600",
+];
+
+function avatarTone(seed: string): string {
+  let n = 0;
+  for (const ch of seed) n = (n + ch.charCodeAt(0)) % 997;
+  return AVATARS[n % AVATARS.length] as string;
+}
+
+function multiplierColor(value: number): string {
+  if (value >= 10) return "text-fuchsia-400";
+  if (value >= 2) return "text-purple-400";
+  return "text-sky-400";
+}
+
 export function BetFeed({ bets, previous }: Props) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("All Bets");
 
@@ -17,7 +45,7 @@ export function BetFeed({ bets, previous }: Props) {
     if (tab === "Previous") return previous;
     if (tab === "Top")
       return [...bets, ...previous].sort((a, b) => Number(b.payout) - Number(a.payout)).slice(0, 40);
-    return bets;
+    return [...bets].sort((a, b) => Number(b.amount) - Number(a.amount));
   }, [tab, bets, previous]);
 
   const totalStake = bets.reduce((sum, b) => sum + Number(b.amount), 0);
@@ -45,47 +73,56 @@ export function BetFeed({ bets, previous }: Props) {
         <span>{formatKes(totalStake)} KES staked</span>
       </div>
 
-      <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 border-b border-border/60 pb-1.5 text-[11px] tracking-wide text-muted-foreground uppercase">
+      <div className="mt-2 grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-2 border-b border-border/60 pb-1.5 text-[11px] text-muted-foreground">
         <span>Player</span>
-        <span className="text-right">Bet</span>
-        <span className="w-20 text-right">Cash out</span>
+        <span className="text-right">Bet KES</span>
+        <span className="w-12 text-right">X</span>
+        <span className="text-right">Win KES</span>
       </div>
 
-      <ul className="max-h-72 divide-y divide-border/40 overflow-y-auto">
+      <ul className="max-h-80 overflow-y-auto">
         {rows.length === 0 && (
           <li className="py-6 text-center text-sm text-muted-foreground">Waiting for bets…</li>
         )}
-        {rows.map((bet) => (
-          <li
-            key={bet.id}
-            className={cn(
-              "grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2 text-sm",
-              bet.status === "won" && "bg-success/10",
-            )}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary text-[10px] font-bold">
-                {bet.username.slice(0, 2).toUpperCase()}
-              </span>
-              <span className="truncate text-muted-foreground">{bet.username}</span>
-            </span>
-            <span className="text-right tabular-nums">{formatKes(Number(bet.amount))}</span>
-            <span className="w-20 text-right tabular-nums">
-              {bet.status === "won" ? (
-                <span className="font-semibold text-money">
-                  {formatMultiplier(Number(bet.cashout_multiplier ?? 0))}
-                  <span className="block text-[11px] font-normal">
-                    +{formatKes(Number(bet.payout))}
-                  </span>
-                </span>
-              ) : bet.status === "lost" ? (
-                <span className="text-primary">—</span>
-              ) : (
-                <span className="text-muted-foreground">…</span>
+        {rows.map((bet) => {
+          const won = bet.status === "won";
+          return (
+            <li
+              key={bet.id}
+              className={cn(
+                "my-0.5 grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-2 rounded-lg px-1 py-1.5 text-sm",
+                won ? "bg-success/15 ring-1 ring-success/25" : "bg-background/40",
               )}
-            </span>
-          </li>
-        ))}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  className={cn(
+                    "size-7 shrink-0 rounded-full bg-gradient-to-br",
+                    avatarTone(bet.username),
+                  )}
+                />
+                <span className="truncate text-muted-foreground">{maskPlayer(bet.username)}</span>
+              </span>
+              <span className="text-right tabular-nums">{formatKes(Number(bet.amount))}</span>
+              <span
+                className={cn(
+                  "w-12 text-right font-semibold tabular-nums",
+                  won ? multiplierColor(Number(bet.cashout_multiplier ?? 0)) : "text-transparent",
+                )}
+              >
+                {won ? formatMultiplier(Number(bet.cashout_multiplier ?? 0)) : "—"}
+              </span>
+              <span
+                className={cn(
+                  "text-right tabular-nums",
+                  won ? "text-foreground" : "text-transparent",
+                )}
+              >
+                {won ? formatKes(Number(bet.payout)) : "—"}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

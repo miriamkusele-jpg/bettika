@@ -9,14 +9,14 @@ import { formatKes, formatMultiplier } from "@/lib/betkaa";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin dashboard — BETKAA" },
+      { title: "Admin dashboard — Aviator" },
       {
         name: "description",
         content:
-          "BETKAA operator dashboard: players, staked volume, payouts, gross gaming revenue and recent round outcomes.",
+          "Aviator operator dashboard: players, staked volume, payouts, gross gaming revenue and recent round outcomes.",
       },
-      { property: "og:title", content: "Admin dashboard — BETKAA" },
-      { property: "og:description", content: "Operator analytics for the BETKAA crash game." },
+      { property: "og:title", content: "Admin dashboard — Aviator" },
+      { property: "og:description", content: "Operator analytics for the Aviator crash game." },
       { name: "robots", content: "noindex" },
     ],
   }),

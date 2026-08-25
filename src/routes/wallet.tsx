@@ -11,13 +11,13 @@ import { formatKes } from "@/lib/betkaa";
 export const Route = createFileRoute("/wallet")({
   head: () => ({
     meta: [
-      { title: "Wallet — BETKAA" },
+      { title: "Wallet — Aviator" },
       {
         name: "description",
         content:
-          "Your BETKAA wallet: M-PESA deposits with a 100% bonus, withdrawals, cash and bonus balances and a full ledger.",
+          "Your Aviator wallet: M-PESA deposits with a 100% bonus, withdrawals, cash and bonus balances and a full ledger.",
       },
-      { property: "og:title", content: "Wallet — BETKAA" },
+      { property: "og:title", content: "Wallet — Aviator" },
       {
         property: "og:description",
         content: "M-PESA deposits, withdrawals and a full ledger of every movement.",

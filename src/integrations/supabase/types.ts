@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bets: {
         Row: {
           amount: number
@@ -363,6 +384,25 @@ export type Database = {
         Args: { _bonus: number; _cash: number; _note: string; _user_id: string }
         Returns: undefined
       }
+      admin_next_crash: {
+        Args: never
+        Returns: {
+          crash_multiplier: number
+          crashed_at: string
+          id: number
+          running_at: string
+        }[]
+      }
+      admin_recent_rounds: {
+        Args: { _limit?: number }
+        Returns: {
+          crash_multiplier: number
+          crashed_at: string
+          id: number
+          running_at: string
+          settled: boolean
+        }[]
+      }
       admin_review_withdrawal: {
         Args: { _approve: boolean; _id: string; _note: string }
         Returns: undefined
@@ -371,6 +411,7 @@ export type Database = {
         Args: { _status: string; _user_id: string }
         Returns: undefined
       }
+      admin_wallet_transfer: { Args: { _amount: number }; Returns: number }
       attach_deposit_refs: {
         Args: { _checkout: string; _deposit_id: string; _merchant: string }
         Returns: undefined
@@ -379,6 +420,7 @@ export type Database = {
         Args: { _phone: string; _username: string }
         Returns: undefined
       }
+      cancel_bet: { Args: { _bet_id: string }; Returns: undefined }
       cash_out: {
         Args: { _bet_id: string }
         Returns: {
@@ -431,6 +473,7 @@ export type Database = {
         Args: { _checkout: string; _receipt: string }
         Returns: undefined
       }
+      ensure_admin_wallet: { Args: never; Returns: number }
       ensure_current_round: {
         Args: never
         Returns: {
@@ -528,6 +571,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      round_history: {
+        Args: { _limit?: number }
+        Returns: {
+          crash_multiplier: number
+          crashed_at: string
+          id: number
+        }[]
       }
       round_multiplier: {
         Args: { _at: string; _running_at: string }

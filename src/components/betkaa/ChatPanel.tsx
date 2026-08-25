@@ -84,7 +84,7 @@ export function ChatPanel({ open, onOpenChange, userId, username, isAdmin }: Pro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex w-full max-w-sm flex-col bg-surface p-0">
         <SheetHeader className="border-b border-border/60 px-4 py-3">
-          <SheetTitle>BETKAA Chat</SheetTitle>
+          <SheetTitle>Aviator Chat</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">

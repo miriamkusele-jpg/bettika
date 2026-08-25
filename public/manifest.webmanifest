@@ -1,6 +1,6 @@
 {
-  "name": "BETKAA — Live crash game",
-  "short_name": "BETKAA",
+  "name": "Aviator — Live crash game",
+  "short_name": "Aviator",
   "description": "Real-time crash game with instant KES balances, dual bet slips and live bets.",
   "start_url": "/",
   "display": "standalone",

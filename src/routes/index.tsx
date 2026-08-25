@@ -16,13 +16,13 @@ import { roundState, type Bet } from "@/lib/betkaa";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "BETKAA — Live crash game in Kenyan shillings" },
+      { title: "Aviator — Live crash game in Kenyan shillings" },
       {
         name: "description",
         content:
-          "Fly with BETKAA: a real-time, server-authoritative crash game. Place two bets a round, cash out before the plane leaves, and track every player live.",
+          "Fly with Aviator: a real-time, server-authoritative crash game. Place two bets a round, cash out before the plane leaves, and track every player live.",
       },
-      { property: "og:title", content: "BETKAA — Live crash game in Kenyan shillings" },
+      { property: "og:title", content: "Aviator — Live crash game in Kenyan shillings" },
       {
         property: "og:description",
         content:
@@ -139,7 +139,7 @@ function GamePage() {
         <BetFeed bets={bets} previous={previous} />
 
         <p className="px-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-          18+ only. BETKAA uses original artwork and its own game engine. Crash points are generated
+          18+ only. Aviator uses original artwork and its own game engine. Crash points are generated
           on the server before each round starts and cannot be influenced by any player.
         </p>
       </main>
