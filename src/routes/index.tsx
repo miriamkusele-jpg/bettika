@@ -142,6 +142,7 @@ function GamePage() {
               signedIn={Boolean(userId)}
               onPlace={(s, amount, auto) => void place(s, amount, auto)}
               onCashOut={(id) => void cashOut(id)}
+              onCancel={(id) => void cancel(id)}
               onRequireAuth={requireAuth}
             />
           ))}
