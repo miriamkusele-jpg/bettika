@@ -87,6 +87,17 @@ function GamePage() {
     if (row) toast.success(`Cashed out at ${Number(row.cashout_multiplier).toFixed(2)}x`);
   }, []);
 
+  const cancel = useCallback(async (betId: string) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("cancel_bet", { _bet_id: betId });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message.replace(/^.*?:\s*/, ""));
+      return;
+    }
+    toast.success("Bet cancelled — stake refunded");
+  }, []);
+
   return (
     <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background pb-10">
       <TopBar
@@ -131,6 +142,7 @@ function GamePage() {
               signedIn={Boolean(userId)}
               onPlace={(s, amount, auto) => void place(s, amount, auto)}
               onCashOut={(id) => void cashOut(id)}
+              onCancel={(id) => void cancel(id)}
               onRequireAuth={requireAuth}
             />
           ))}

@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MoneySheet } from "@/components/betkaa/MoneySheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/useBetkaa";
 import { formatKes, formatMultiplier } from "@/lib/betkaa";
@@ -13,10 +17,12 @@ export const Route = createFileRoute("/admin")({
       {
         name: "description",
         content:
-          "Aviator operator dashboard: players, staked volume, payouts, gross gaming revenue and recent round outcomes.",
+          "Aviator operator dashboard: operator float, next round fly-away point, players, staked volume, payouts and gross gaming revenue.",
       },
       { property: "og:title", content: "Admin dashboard — Aviator" },
       { property: "og:description", content: "Operator analytics for the Aviator crash game." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -37,26 +43,38 @@ interface RoundRow {
   running_at: string;
 }
 
+interface NextCrash {
+  id: number;
+  crash_multiplier: number;
+  running_at: string;
+}
 
 function AdminPage() {
-  const { isAdmin, loading } = useAccount();
+  const { isAdmin, loading, phone, cash, refresh } = useAccount();
   const [stats, setStats] = useState<Stats | null>(null);
   const [rounds, setRounds] = useState<RoundRow[]>([]);
+  const [next, setNext] = useState<NextCrash | null>(null);
+  const [float, setFloat] = useState<number | null>(null);
+  const [transfer, setTransfer] = useState("1000");
+  const [busy, setBusy] = useState(false);
+  const [revealed, setRevealed] = useState(true);
+  const [money, setMoney] = useState<"deposit" | "withdraw" | null>(null);
+
+  const loadFloat = useCallback(async () => {
+    const { data } = await supabase.rpc("ensure_admin_wallet");
+    setFloat(data === null || data === undefined ? null : Number(data));
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
     let alive = true;
     const load = async () => {
-      const [players, roundCount, bets, recent] = await Promise.all([
+      const [players, roundCount, bets, recent, nextCrash] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("rounds").select("id", { count: "exact", head: true }),
         supabase.from("bets").select("amount, payout").limit(5000),
-        supabase
-          .from("rounds")
-          .select("id, crash_multiplier, settled, running_at")
-          .order("id", { ascending: false })
-          .limit(20),
-
+        supabase.rpc("admin_recent_rounds", { _limit: 20 }),
+        supabase.rpc("admin_next_crash"),
       ]);
       if (!alive) return;
       const rows = (bets.data ?? []) as { amount: number; payout: number }[];
@@ -66,15 +84,47 @@ function AdminPage() {
         staked: rows.reduce((s, r) => s + Number(r.amount), 0),
         paid: rows.reduce((s, r) => s + Number(r.payout ?? 0), 0),
       });
-      setRounds((recent.data ?? []) as RoundRow[]);
+      setRounds(
+        ((recent.data ?? []) as RoundRow[]).map((r) => ({
+          ...r,
+          crash_multiplier: Number(r.crash_multiplier),
+        })),
+      );
+      const upcoming = (nextCrash.data ?? [])[0] as NextCrash | undefined;
+      setNext(
+        upcoming
+          ? { ...upcoming, crash_multiplier: Number(upcoming.crash_multiplier) }
+          : null,
+      );
     };
     void load();
-    const timer = setInterval(load, 10000);
+    void loadFloat();
+    const timer = setInterval(load, 5000);
     return () => {
       alive = false;
       clearInterval(timer);
     };
-  }, [isAdmin]);
+  }, [isAdmin, loadFloat]);
+
+  const doTransfer = async () => {
+    const amount = Number(transfer) || 0;
+    if (amount <= 0) {
+      toast.error("Enter an amount to transfer");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_wallet_transfer", { _amount: amount });
+      if (error) throw new Error(error.message);
+      setFloat(data === null || data === undefined ? null : Number(data));
+      refresh();
+      toast.success(`Moved ${formatKes(amount)} KES into your playing wallet`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Transfer failed");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (loading) return <main className="p-6 text-sm text-muted-foreground">Loading…</main>;
 
@@ -100,6 +150,67 @@ function AdminPage() {
         <ChevronLeft className="size-4" /> Back to game
       </Link>
       <h1 className="text-xl font-black tracking-tight">Admin dashboard</h1>
+
+      {/* Operator wallet */}
+      <section className="mt-4 rounded-2xl bg-surface p-4 shadow-[var(--shadow-card)]">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs text-muted-foreground">Operator wallet (float)</p>
+          <p className="text-xs text-muted-foreground">
+            Playing wallet: <span className="font-semibold text-foreground">{formatKes(cash)}</span>
+          </p>
+        </div>
+        <p className="mt-1 text-3xl font-black tabular-nums text-money">
+          {float === null ? "—" : `${formatKes(float)} KES`}
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Input
+            inputMode="numeric"
+            value={transfer}
+            onChange={(e) => setTransfer(e.target.value.replace(/[^0-9]/g, ""))}
+            className="h-11 flex-1 text-base font-bold tabular-nums"
+            aria-label="Transfer amount"
+          />
+          <Button variant="brand" className="h-11" disabled={busy} onClick={() => void doTransfer()}>
+            {busy && <Loader2 className="animate-spin" />}
+            Transfer to wallet
+          </Button>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button variant="bet" className="h-11" onClick={() => setMoney("deposit")}>
+            <ArrowDownToLine className="size-4" /> Deposit
+          </Button>
+          <Button variant="muted" className="h-11" onClick={() => setMoney("withdraw")}>
+            <ArrowUpFromLine className="size-4" /> Withdraw
+          </Button>
+        </div>
+      </section>
+
+      {/* Next round fly-away point — admin only */}
+      <section className="mt-4 rounded-2xl border border-brand-2/40 bg-surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">Next round fly-away point (admin only)</p>
+          <button
+            type="button"
+            onClick={() => setRevealed((v) => !v)}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+          >
+            {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {revealed ? "Hide" : "Show"}
+          </button>
+        </div>
+        {next ? (
+          <>
+            <p className="mt-1 text-3xl font-black tabular-nums text-brand-2">
+              {revealed ? formatMultiplier(next.crash_multiplier) : "•••••"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Round #{next.id} · takes off {new Date(next.running_at).toLocaleTimeString()}
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">Waiting for the next round…</p>
+        )}
+      </section>
 
       <section className="mt-4 grid grid-cols-2 gap-3">
         {[
@@ -152,9 +263,21 @@ function AdminPage() {
       </section>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Crash points are generated server-side with a provably consistent house edge; players can
-        never see or influence a round result before it settles.
+        Crash points are generated server-side with a provably consistent house edge. Players only
+        see a round's fly-away point after the plane flies away — this dashboard is the only place
+        the upcoming point is visible.
       </p>
+
+      <MoneySheet
+        mode={money}
+        onClose={() => setMoney(null)}
+        defaultPhone={phone ?? ""}
+        cash={cash}
+        onDone={() => {
+          refresh();
+          void loadFloat();
+        }}
+      />
     </main>
   );
 }
