@@ -1,0 +1,1 @@
+revoke execute on function public.enforce_single_admin_phone() from anon, authenticated, public;
