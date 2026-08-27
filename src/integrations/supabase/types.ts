@@ -126,6 +126,7 @@ export type Database = {
           id: string
           merchant_request_id: string | null
           phone: string
+          provider: string
         }
         Insert: {
           attempt: number
@@ -137,6 +138,7 @@ export type Database = {
           id?: string
           merchant_request_id?: string | null
           phone: string
+          provider?: string
         }
         Update: {
           attempt?: number
@@ -148,6 +150,7 @@ export type Database = {
           id?: string
           merchant_request_id?: string | null
           phone?: string
+          provider?: string
         }
         Relationships: [
           {
@@ -171,6 +174,7 @@ export type Database = {
           merchant_request_id: string | null
           mpesa_receipt: string | null
           phone: string
+          provider: string
           result_desc: string | null
           status: string
           updated_at: string
@@ -187,6 +191,7 @@ export type Database = {
           merchant_request_id?: string | null
           mpesa_receipt?: string | null
           phone: string
+          provider?: string
           result_desc?: string | null
           status?: string
           updated_at?: string
@@ -203,6 +208,7 @@ export type Database = {
           merchant_request_id?: string | null
           mpesa_receipt?: string | null
           phone?: string
+          provider?: string
           result_desc?: string | null
           status?: string
           updated_at?: string
@@ -457,6 +463,7 @@ export type Database = {
           merchant_request_id: string | null
           mpesa_receipt: string | null
           phone: string
+          provider: string
           result_desc: string | null
           status: string
           updated_at: string
@@ -560,6 +567,7 @@ export type Database = {
           merchant_request_id: string | null
           mpesa_receipt: string | null
           phone: string
+          provider: string
           result_desc: string | null
           status: string
           updated_at: string
@@ -585,6 +593,10 @@ export type Database = {
         Returns: number
       }
       server_now: { Args: never; Returns: string }
+      set_deposit_provider: {
+        Args: { _deposit_id: string; _provider: string }
+        Returns: undefined
+      }
       settle_round: { Args: { _round_id: number }; Returns: undefined }
       spawn_bot_bets: { Args: { _round_id: number }; Returns: undefined }
       wallet_apply: {
