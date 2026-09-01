@@ -7,12 +7,18 @@ export const startDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { amount: number; phone: string }) => {
     const amount = Math.round(Number(input.amount));
-    const phone = String(input.phone).replace(/\D/g, "");
+    // Accept 07…, 01…, 254… and +254… for both Safaricom and Airtel lines.
+    const digits = String(input.phone).replace(/\D/g, "");
+    const local = digits.startsWith("254")
+      ? digits.slice(3)
+      : digits.startsWith("0")
+        ? digits.slice(1)
+        : digits;
     if (!Number.isFinite(amount) || amount < 10 || amount > 150000) {
       throw new Error("Deposit must be between KES 10 and KES 150,000");
     }
-    if (!/^254[17]\d{8}$/.test(phone)) throw new Error("Enter a valid Safaricom number");
-    return { amount, phone };
+    if (!/^[17]\d{8}$/.test(local)) throw new Error("Enter a valid Kenyan mobile number");
+    return { amount, phone: `254${local}` };
   })
   .handler(async ({ data, context }) => {
     const { data: deposit, error } = await context.supabase.rpc("create_deposit", {

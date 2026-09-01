@@ -86,6 +86,10 @@ export function formatAmount(value: number): string {
 }
 
 /** 0712345678 / 712345678 / 254712... / +254712... -> +254712345678 */
+/**
+ * Accepts every Kenyan mobile number (Safaricom and Airtel) in any common
+ * format: 0712…, 0102…, 254…, +254…. Returns the `+254…` canonical form.
+ */
 export function normalizeKenyanPhone(input: string): string | null {
   const digits = input.replace(/\D/g, "");
   let local: string;
@@ -94,6 +98,12 @@ export function normalizeKenyanPhone(input: string): string | null {
   else local = digits;
   if (!/^[17]\d{8}$/.test(local)) return null;
   return `+254${local}`;
+}
+
+/** Same rules, but in the `254…` form the payment provider requires. */
+export function toMsisdn(input: string): string | null {
+  const normalized = normalizeKenyanPhone(input);
+  return normalized ? normalized.slice(1) : null;
 }
 
 /** Auth identity derived from the phone number (no OTP, no e-mail collected). */
