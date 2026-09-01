@@ -65,11 +65,15 @@ const statusTone: Record<string, string> = {
 
 function WalletPage() {
   const { session, phone, cash, bonus, loading, refresh } = useAccount();
+  const retryPrompt = useServerFn(retryDeposit);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [mode, setMode] = useState<"deposit" | "withdraw" | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
   const userId = session?.user.id ?? null;
+
+
 
   const load = useCallback(async () => {
     if (!userId) return;
