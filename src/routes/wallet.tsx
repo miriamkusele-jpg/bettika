@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/useBetkaa";
 import { formatKes } from "@/lib/betkaa";
+import { retryDeposit } from "@/lib/payments.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
@@ -65,11 +68,15 @@ const statusTone: Record<string, string> = {
 
 function WalletPage() {
   const { session, phone, cash, bonus, loading, refresh } = useAccount();
+  const retryPrompt = useServerFn(retryDeposit);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [deposits, setDeposits] = useState<DepositRow[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
   const [mode, setMode] = useState<"deposit" | "withdraw" | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
   const userId = session?.user.id ?? null;
+
+
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -94,6 +101,26 @@ function WalletPage() {
     setDeposits((dep.data ?? []) as unknown as DepositRow[]);
     setWithdrawals((wd.data ?? []) as unknown as WithdrawalRow[]);
   }, [userId]);
+
+  const retry = useCallback(
+    async (depositId: string) => {
+      setRetrying(depositId);
+      try {
+        const res = await retryPrompt({ data: { depositId } });
+        toast.success(res.message || "Check your phone and enter your M-PESA PIN");
+      } catch (e) {
+        const raw = e instanceof Error ? e.message : "Could not resend the prompt";
+        const [headline, ...rest] = raw.split("\n");
+        toast.error(headline || "Could not resend the prompt", {
+          ...(rest.length ? { description: rest.join(" ") } : {}),
+        });
+      } finally {
+        setRetrying(null);
+        void load();
+      }
+    },
+    [retryPrompt, load],
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -174,11 +201,24 @@ function WalletPage() {
                         {d.status === "failed" && d.result_desc ? ` · ${d.result_desc}` : ""}
                       </span>
                     </span>
-                    <span
-                      className={`shrink-0 text-xs font-semibold uppercase ${statusTone[d.status] ?? "text-muted-foreground"}`}
-                    >
-                      {d.status}
+                    <span className="flex shrink-0 items-center gap-2">
+                      {d.status === "failed" && (
+                        <Button
+                          variant="muted"
+                          className="h-8 px-3 text-xs"
+                          disabled={retrying === d.id}
+                          onClick={() => void retry(d.id)}
+                        >
+                          Retry prompt
+                        </Button>
+                      )}
+                      <span
+                        className={`text-xs font-semibold uppercase ${statusTone[d.status] ?? "text-muted-foreground"}`}
+                      >
+                        {d.status}
+                      </span>
                     </span>
+
                   </li>
                 ))}
               </ul>
