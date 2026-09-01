@@ -511,6 +511,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_msisdn: { Args: { _phone: string }; Returns: string }
       place_bet: {
         Args: { _amount: number; _auto_cashout: number; _slot: number }
         Returns: {
