@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/hooks/useBetkaa";
 import { formatKes } from "@/lib/betkaa";
+import { retryDeposit } from "@/lib/payments.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
@@ -98,6 +101,26 @@ function WalletPage() {
     setDeposits((dep.data ?? []) as unknown as DepositRow[]);
     setWithdrawals((wd.data ?? []) as unknown as WithdrawalRow[]);
   }, [userId]);
+
+  const retry = useCallback(
+    async (depositId: string) => {
+      setRetrying(depositId);
+      try {
+        const res = await retryPrompt({ data: { depositId } });
+        toast.success(res.message || "Check your phone and enter your M-PESA PIN");
+      } catch (e) {
+        const raw = e instanceof Error ? e.message : "Could not resend the prompt";
+        const [headline, ...rest] = raw.split("\n");
+        toast.error(headline || "Could not resend the prompt", {
+          ...(rest.length ? { description: rest.join(" ") } : {}),
+        });
+      } finally {
+        setRetrying(null);
+        void load();
+      }
+    },
+    [retryPrompt, load],
+  );
 
   useEffect(() => {
     if (!userId) return;
