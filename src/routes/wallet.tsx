@@ -174,11 +174,24 @@ function WalletPage() {
                         {d.status === "failed" && d.result_desc ? ` · ${d.result_desc}` : ""}
                       </span>
                     </span>
-                    <span
-                      className={`shrink-0 text-xs font-semibold uppercase ${statusTone[d.status] ?? "text-muted-foreground"}`}
-                    >
-                      {d.status}
+                    <span className="flex shrink-0 items-center gap-2">
+                      {d.status === "failed" && (
+                        <Button
+                          variant="muted"
+                          className="h-8 px-3 text-xs"
+                          disabled={retrying === d.id}
+                          onClick={() => void retry(d.id)}
+                        >
+                          Retry prompt
+                        </Button>
+                      )}
+                      <span
+                        className={`text-xs font-semibold uppercase ${statusTone[d.status] ?? "text-muted-foreground"}`}
+                      >
+                        {d.status}
+                      </span>
                     </span>
+
                   </li>
                 ))}
               </ul>
