@@ -121,7 +121,13 @@ export async function initiateCollection(args: {
   );
 
   if (!res.ok || !reference) {
-    const raw = pick("message", "detail", "error");
+    let raw = pick("message", "detail", "error");
+    // Provider float / account problems are on our side, not the player's.
+    if (/service wallet|insufficient .*balance|float/i.test(raw)) {
+      console.error("[upesipay] provider float issue", correlationId, raw);
+      raw =
+        "M-PESA deposits are temporarily unavailable. Nothing was charged — please try again shortly.";
+    }
     fail("initiate", raw || "The payment provider rejected this request.", correlationId, {
       httpStatus: res.status,
       ...(pick("code") ? { providerCode: pick("code") } : {}),
