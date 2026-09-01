@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as ApiPublicMpesaCallbackRouteImport } from './routes/api/public/mpesa/callback'
+import { Route as ApiPublicUpesipayCallbackRouteImport } from './routes/api/public/upesipay/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,12 @@ const ApiPublicMpesaCallbackRoute = ApiPublicMpesaCallbackRouteImport.update({
   path: '/api/public/mpesa/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicUpesipayCallbackRoute =
+  ApiPublicUpesipayCallbackRouteImport.update({
+    id: '/api/public/upesipay/callback',
+    path: '/api/public/upesipay/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +54,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/wallet': typeof WalletRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
+  '/api/public/upesipay/callback': typeof ApiPublicUpesipayCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +62,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/wallet': typeof WalletRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
+  '/api/public/upesipay/callback': typeof ApiPublicUpesipayCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +71,25 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/wallet': typeof WalletRoute
   '/api/public/mpesa/callback': typeof ApiPublicMpesaCallbackRoute
+  '/api/public/upesipay/callback': typeof ApiPublicUpesipayCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/auth' | '/wallet' | '/api/public/mpesa/callback'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/wallet'
+    | '/api/public/mpesa/callback'
+    | '/api/public/upesipay/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth' | '/wallet' | '/api/public/mpesa/callback'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/wallet'
+    | '/api/public/mpesa/callback'
+    | '/api/public/upesipay/callback'
   id:
     | '__root__'
     | '/'
@@ -75,6 +97,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/wallet'
     | '/api/public/mpesa/callback'
+    | '/api/public/upesipay/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +106,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   WalletRoute: typeof WalletRoute
   ApiPublicMpesaCallbackRoute: typeof ApiPublicMpesaCallbackRoute
+  ApiPublicUpesipayCallbackRoute: typeof ApiPublicUpesipayCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpesaCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/upesipay/callback': {
+      id: '/api/public/upesipay/callback'
+      path: '/api/public/upesipay/callback'
+      fullPath: '/api/public/upesipay/callback'
+      preLoaderRoute: typeof ApiPublicUpesipayCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +162,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   WalletRoute: WalletRoute,
   ApiPublicMpesaCallbackRoute: ApiPublicMpesaCallbackRoute,
+  ApiPublicUpesipayCallbackRoute: ApiPublicUpesipayCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

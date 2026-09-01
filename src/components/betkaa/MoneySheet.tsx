@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKes, normalizeKenyanPhone } from "@/lib/betkaa";
-import { startMpesaDeposit } from "@/lib/mpesa.functions";
+import { startDeposit } from "@/lib/payments.functions";
 
 const DEPOSIT_PRESETS = [100, 500, 1000, 5000];
 const WITHDRAW_PRESETS = [200, 1000, 5000];
@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props) {
-  const deposit = useServerFn(startMpesaDeposit);
+  const deposit = useServerFn(startDeposit);
   const [amount, setAmount] = useState("500");
   const [phone, setPhone] = useState(defaultPhone);
   const [busy, setBusy] = useState(false);
