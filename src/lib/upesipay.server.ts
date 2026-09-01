@@ -67,10 +67,12 @@ export async function initiateCollection(args: {
 }): Promise<InitiateResult> {
   const correlationId = args.correlationId ?? newCorrelationId();
 
-  const auth = process.env["UPESIPAY_AUTH_HEADER"];
-  if (!auth) {
+  const rawAuth = process.env["UPESIPAY_AUTH_HEADER"];
+  if (!rawAuth) {
     fail("config", "Payments are not fully configured yet. Please try again later.", correlationId);
   }
+  // The provider only accepts `Basic <token>`; strip stray Bearer prefixes.
+  const auth = `Basic ${rawAuth.trim().replace(/^(?:Bearer\s+)+/i, "").replace(/^Basic\s+/i, "")}`;
   const channelId = Number(process.env["UPESIPAY_CHANNEL_ID"] ?? 143);
 
   let res: Response;
