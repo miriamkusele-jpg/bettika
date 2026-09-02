@@ -86,8 +86,10 @@ function AdminPage() {
     setDrafts((prev) => {
       const nextDrafts = { ...prev };
       for (const row of rows) {
-        if (nextDrafts[row.slot] === undefined)
-          nextDrafts[row.slot] = row.crash_multiplier.toFixed(2);
+        const value = row.crash_multiplier.toFixed(2);
+        // Re-sync whenever the server value changed (e.g. the queue shifted up).
+        if (serverValues.current[row.slot] !== value) nextDrafts[row.slot] = value;
+        serverValues.current[row.slot] = value;
       }
       return nextDrafts;
     });
