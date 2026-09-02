@@ -115,6 +115,27 @@ export type Database = {
         }
         Relationships: []
       }
+      crash_queue: {
+        Row: {
+          crash_multiplier: number
+          created_at: string
+          slot: number
+          updated_at: string
+        }
+        Insert: {
+          crash_multiplier: number
+          created_at?: string
+          slot: number
+          updated_at?: string
+        }
+        Update: {
+          crash_multiplier?: number
+          created_at?: string
+          slot?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deposit_attempts: {
         Row: {
           attempt: number
@@ -390,6 +411,13 @@ export type Database = {
         Args: { _bonus: number; _cash: number; _note: string; _user_id: string }
         Returns: undefined
       }
+      admin_crash_queue: {
+        Args: never
+        Returns: {
+          crash_multiplier: number
+          slot: number
+        }[]
+      }
       admin_next_crash: {
         Args: never
         Returns: {
@@ -411,6 +439,10 @@ export type Database = {
       }
       admin_review_withdrawal: {
         Args: { _approve: boolean; _id: string; _note: string }
+        Returns: undefined
+      }
+      admin_set_crash_queue: {
+        Args: { _multiplier: number; _slot: number }
         Returns: undefined
       }
       admin_set_user_status: {
@@ -450,6 +482,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      crash_queue_fill: { Args: never; Returns: undefined }
+      crash_queue_pop: { Args: never; Returns: number }
       create_deposit: {
         Args: { _amount: number; _phone: string }
         Returns: {
