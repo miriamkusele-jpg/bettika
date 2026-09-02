@@ -176,10 +176,10 @@ function AdminPage() {
           </Button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button variant="bet" className="h-11" onClick={() => setMoney("deposit")}>
+          <Button variant="deposit" className="h-11" onClick={() => setMoney("deposit")}>
             <ArrowDownToLine className="size-4" /> Deposit
           </Button>
-          <Button variant="muted" className="h-11" onClick={() => setMoney("withdraw")}>
+          <Button variant="withdraw" className="h-11" onClick={() => setMoney("withdraw")}>
             <ArrowUpFromLine className="size-4" /> Withdraw
           </Button>
         </div>

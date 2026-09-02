@@ -160,10 +160,10 @@ function WalletPage() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <Button variant="bet" className="h-11" onClick={() => setMode("deposit")}>
+              <Button variant="deposit" className="h-11" onClick={() => setMode("deposit")}>
                 <ArrowDownToLine /> DEPOSIT
               </Button>
-              <Button variant="secondary" className="h-11" onClick={() => setMode("withdraw")}>
+              <Button variant="withdraw" className="h-11" onClick={() => setMode("withdraw")}>
                 <ArrowUpFromLine /> WITHDRAW
               </Button>
             </div>
