@@ -70,6 +70,7 @@ function AdminPage() {
   const [queue, setQueue] = useState<QueueRow[]>([]);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [savingSlot, setSavingSlot] = useState<number | null>(null);
+  const serverValues = useRef<Record<number, string>>({});
 
   const loadFloat = useCallback(async () => {
     const { data } = await supabase.rpc("ensure_admin_wallet");
