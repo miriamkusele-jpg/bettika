@@ -49,6 +49,13 @@ interface NextCrash {
   running_at: string;
 }
 
+interface QueueRow {
+  slot: number;
+  crash_multiplier: number;
+}
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th"];
+
 function AdminPage() {
   const { isAdmin, loading, phone, cash, refresh } = useAccount();
   const [stats, setStats] = useState<Stats | null>(null);
