@@ -60,10 +60,53 @@ function AdminPage() {
   const [revealed, setRevealed] = useState(true);
   const [money, setMoney] = useState<"deposit" | "withdraw" | null>(null);
 
+  const [queue, setQueue] = useState<QueueRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [savingSlot, setSavingSlot] = useState<number | null>(null);
+
   const loadFloat = useCallback(async () => {
     const { data } = await supabase.rpc("ensure_admin_wallet");
     setFloat(data === null || data === undefined ? null : Number(data));
   }, []);
+
+  const loadQueue = useCallback(async () => {
+    const { data } = await supabase.rpc("admin_crash_queue");
+    const rows = ((data ?? []) as QueueRow[]).map((r) => ({
+      slot: Number(r.slot),
+      crash_multiplier: Number(r.crash_multiplier),
+    }));
+    setQueue(rows);
+    setDrafts((prev) => {
+      const nextDrafts = { ...prev };
+      for (const row of rows) {
+        if (nextDrafts[row.slot] === undefined)
+          nextDrafts[row.slot] = row.crash_multiplier.toFixed(2);
+      }
+      return nextDrafts;
+    });
+  }, []);
+
+  const saveSlot = async (slot: number) => {
+    const value = Number(drafts[slot]);
+    if (!Number.isFinite(value) || value < 1 || value > 1000) {
+      toast.error("Fly-away point must be between 1.00 and 1000.00");
+      return;
+    }
+    setSavingSlot(slot);
+    try {
+      const { error } = await supabase.rpc("admin_set_crash_queue", {
+        _slot: slot,
+        _multiplier: value,
+      });
+      if (error) throw new Error(error.message);
+      await loadQueue();
+      toast.success(`Upcoming round #${slot} set to ${formatMultiplier(value)}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the fly-away point");
+    } finally {
+      setSavingSlot(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
