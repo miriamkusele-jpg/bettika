@@ -149,12 +149,16 @@ function AdminPage() {
     };
     void load();
     void loadFloat();
-    const timer = setInterval(load, 5000);
+    void loadQueue();
+    const timer = setInterval(() => {
+      void load();
+      void loadQueue();
+    }, 5000);
     return () => {
       alive = false;
       clearInterval(timer);
     };
-  }, [isAdmin, loadFloat]);
+  }, [isAdmin, loadFloat, loadQueue]);
 
   const doTransfer = async () => {
     const amount = Number(transfer) || 0;
