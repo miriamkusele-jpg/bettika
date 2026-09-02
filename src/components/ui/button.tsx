@@ -20,6 +20,9 @@ const buttonVariants = cva(
         cashout:
           "bg-[image:var(--gradient-cashout)] text-background shadow-[var(--shadow-card)] hover:brightness-110",
         muted: "bg-secondary text-muted-foreground",
+        deposit: "bg-warning font-bold text-background shadow-[var(--shadow-card)] hover:brightness-110",
+        withdraw:
+          "bg-destructive font-bold text-destructive-foreground shadow-[var(--shadow-card)] hover:brightness-110",
         brand:
           "bg-[image:var(--gradient-brand)] text-primary-foreground shadow-[var(--shadow-glow)] hover:brightness-110",
       },

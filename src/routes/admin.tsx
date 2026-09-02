@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,13 @@ interface NextCrash {
   running_at: string;
 }
 
+interface QueueRow {
+  slot: number;
+  crash_multiplier: number;
+}
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th"];
+
 function AdminPage() {
   const { isAdmin, loading, phone, cash, refresh } = useAccount();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -60,10 +67,62 @@ function AdminPage() {
   const [revealed, setRevealed] = useState(true);
   const [money, setMoney] = useState<"deposit" | "withdraw" | null>(null);
 
+  const [queue, setQueue] = useState<QueueRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [savingSlot, setSavingSlot] = useState<number | null>(null);
+  const serverValues = useRef<Record<number, string>>({});
+  const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const loadFloat = useCallback(async () => {
     const { data } = await supabase.rpc("ensure_admin_wallet");
     setFloat(data === null || data === undefined ? null : Number(data));
   }, []);
+
+  const loadQueue = useCallback(async () => {
+    const { data } = await supabase.rpc("admin_crash_queue");
+    const rows = ((data ?? []) as QueueRow[]).map((r) => ({
+      slot: Number(r.slot),
+      crash_multiplier: Number(r.crash_multiplier),
+    }));
+    setQueue(rows);
+    setDrafts((prev) => {
+      const nextDrafts = { ...prev };
+      for (const row of rows) {
+        const value = row.crash_multiplier.toFixed(2);
+        // Re-sync whenever the server value changed (e.g. the queue shifted up).
+        if (serverValues.current[row.slot] !== value) nextDrafts[row.slot] = value;
+        serverValues.current[row.slot] = value;
+      }
+      return nextDrafts;
+    });
+  }, []);
+
+  const saveSlot = async (slot: number) => {
+    const value = Number(drafts[slot]);
+    if (!Number.isFinite(value) || value < 1 || value > 1000) {
+      toast.error("Fly-away point must be between 1.00 and 1000.00");
+      return;
+    }
+    setSavingSlot(slot);
+    try {
+      const { error } = await supabase.rpc("admin_set_crash_queue", {
+        _slot: slot,
+        _multiplier: value,
+      });
+      if (error) throw new Error(error.message);
+      await loadQueue();
+      toast.success(`Upcoming round #${slot} set to ${formatMultiplier(value)}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the fly-away point");
+    } finally {
+      setSavingSlot(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -99,12 +158,16 @@ function AdminPage() {
     };
     void load();
     void loadFloat();
-    const timer = setInterval(load, 5000);
+    void loadQueue();
+    const timer = setInterval(() => {
+      void load();
+      void loadQueue();
+    }, 5000);
     return () => {
       alive = false;
       clearInterval(timer);
     };
-  }, [isAdmin, loadFloat]);
+  }, [isAdmin, loadFloat, loadQueue]);
 
   const doTransfer = async () => {
     const amount = Number(transfer) || 0;
@@ -176,40 +239,116 @@ function AdminPage() {
           </Button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <Button variant="bet" className="h-11" onClick={() => setMoney("deposit")}>
+          <Button variant="deposit" className="h-11" onClick={() => setMoney("deposit")}>
             <ArrowDownToLine className="size-4" /> Deposit
           </Button>
-          <Button variant="muted" className="h-11" onClick={() => setMoney("withdraw")}>
+          <Button variant="withdraw" className="h-11" onClick={() => setMoney("withdraw")}>
             <ArrowUpFromLine className="size-4" /> Withdraw
           </Button>
         </div>
       </section>
 
-      {/* Next round fly-away point — admin only */}
-      <section className="mt-4 rounded-2xl border border-brand-2/40 bg-surface p-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">Next round fly-away point (admin only)</p>
-          <button
-            type="button"
-            onClick={() => setRevealed((v) => !v)}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-          >
-            {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            {revealed ? "Hide" : "Show"}
-          </button>
+      {/* Signal engine — upcoming fly-away queue, admin only */}
+      <section className="mt-4 overflow-hidden rounded-2xl border border-primary/40 bg-surface">
+        <header className="border-b border-dashed border-border/60 px-4 pt-4 pb-3 text-center">
+          <h2 className="text-xl font-black tracking-[0.14em] text-primary uppercase">
+            Signal engine
+          </h2>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+            <div>
+              <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                Current date
+              </p>
+              <p className="font-mono text-sm">{clock.toLocaleDateString("en-GB")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                Active time
+              </p>
+              <p className="font-mono text-sm">{clock.toLocaleTimeString("en-GB")}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                Current day
+              </p>
+              <p className="font-mono text-sm uppercase">
+                {clock.toLocaleDateString("en-GB", { weekday: "long" })}
+              </p>
+            </div>
+            <div className="flex items-end justify-end">
+              <button
+                type="button"
+                onClick={() => setRevealed((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+              >
+                {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                {revealed ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex flex-col items-center px-4 py-6">
+          <div className="flex size-40 items-center justify-center rounded-full border border-dashed border-primary/40 bg-primary/5 shadow-[var(--shadow-glow)]">
+            <span className="text-4xl font-black tabular-nums text-primary">
+              {revealed
+                ? queue[0]
+                  ? queue[0].crash_multiplier.toFixed(2)
+                  : "—"
+                : "•••"}
+            </span>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {next
+              ? `In play: round #${next.id} · takes off ${new Date(next.running_at).toLocaleTimeString()}`
+              : "Waiting for the next round…"}
+          </p>
         </div>
-        {next ? (
-          <>
-            <p className="mt-1 text-3xl font-black tabular-nums text-brand-2">
-              {revealed ? formatMultiplier(next.crash_multiplier) : "•••••"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Round #{next.id} · takes off {new Date(next.running_at).toLocaleTimeString()}
-            </p>
-          </>
-        ) : (
-          <p className="mt-1 text-sm text-muted-foreground">Waiting for the next round…</p>
-        )}
+
+        <div className="border-t border-dashed border-border/60 p-4">
+          <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+            Upcoming fly-away points (admin only)
+          </p>
+          <ul className="mt-3 space-y-2">
+            {[1, 2, 3, 4, 5].map((slot) => {
+              const row = queue.find((q) => q.slot === slot);
+              return (
+                <li key={slot} className="flex items-center gap-2">
+                  <span className="w-10 text-xs font-bold text-muted-foreground">
+                    {ORDINALS[slot - 1]}
+                  </span>
+                  <Input
+                    inputMode="decimal"
+                    value={drafts[slot] ?? ""}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [slot]: e.target.value.replace(/[^0-9.]/g, ""),
+                      }))
+                    }
+                    className="h-10 flex-1 font-mono text-base font-bold tabular-nums"
+                    aria-label={`${ORDINALS[slot - 1]} upcoming fly-away point`}
+                  />
+                  <span className="w-16 text-right text-xs text-muted-foreground tabular-nums">
+                    {revealed && row ? formatMultiplier(row.crash_multiplier) : "•••"}
+                  </span>
+                  <Button
+                    variant={slot === 1 ? "brand" : "muted"}
+                    className="h-10"
+                    disabled={savingSlot === slot}
+                    onClick={() => void saveSlot(slot)}
+                  >
+                    {savingSlot === slot ? <Loader2 className="animate-spin" /> : "Set"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">
+            The 1st point is used for the next round. When that round finishes it leaves the queue and
+            every other point moves up one place, with a fresh random point added at 5th.
+          </p>
+        </div>
       </section>
 
       <section className="mt-4 grid grid-cols-2 gap-3">

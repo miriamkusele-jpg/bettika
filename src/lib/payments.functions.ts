@@ -14,10 +14,14 @@ export const startDeposit = createServerFn({ method: "POST" })
       : digits.startsWith("0")
         ? digits.slice(1)
         : digits;
-    if (!Number.isFinite(amount) || amount < 10 || amount > 150000) {
-      throw new Error("Deposit must be between KES 10 and KES 150,000");
+    if (!Number.isFinite(amount) || amount < 100 || amount > 150000) {
+      throw new Error("Deposit must be between KES 100 and KES 150,000");
     }
-    if (!/^[17]\d{8}$/.test(local)) throw new Error("Enter a valid Kenyan mobile number");
+    if (!/^[17]\d{8}$/.test(local)) {
+      throw new Error(
+        "Enter a valid Kenyan mobile number (Safaricom or Airtel), e.g. 0712345678 or 0102345678",
+      );
+    }
     return { amount, phone: `254${local}` };
   })
   .handler(async ({ data, context }) => {

@@ -17,6 +17,7 @@ import { formatKes, normalizeKenyanPhone } from "@/lib/betkaa";
 import { startDeposit } from "@/lib/payments.functions";
 
 const DEPOSIT_PRESETS = [100, 500, 1000, 5000];
+const MIN_DEPOSIT = 100;
 const WITHDRAW_PRESETS = [200, 1000, 5000];
 
 interface Props {
@@ -40,7 +41,11 @@ export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props)
   const submit = async () => {
     const normalized = normalizeKenyanPhone(phone);
     if (!normalized) {
-      toast.error("Enter a valid Safaricom number, e.g. 0712345678");
+      toast.error("Enter a valid M-PESA or Airtel Money number, e.g. 0712345678");
+      return;
+    }
+    if (isDeposit && value < MIN_DEPOSIT) {
+      toast.error(`Minimum deposit is KES ${MIN_DEPOSIT}`);
       return;
     }
     setBusy(true);
@@ -76,7 +81,7 @@ export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props)
           <DialogTitle>{isDeposit ? "Deposit via M-PESA" : "Withdraw to M-PESA"}</DialogTitle>
           <DialogDescription>
             {isDeposit
-              ? "We'll send an M-PESA prompt to your phone. Approve it with your PIN and your balance updates automatically."
+              ? "We'll send a payment prompt to your phone. Approve it with your PIN and your balance updates automatically. Minimum deposit KES 100."
               : `Cash available: ${formatKes(cash)} KES. Bonus funds cannot be withdrawn.`}
           </DialogDescription>
         </DialogHeader>
@@ -84,14 +89,14 @@ export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props)
         <div className="space-y-3">
           <div>
             <label className="text-xs text-muted-foreground" htmlFor="money-phone">
-              Safaricom number
+              M-PESA or Airtel Money number
             </label>
             <Input
               id="money-phone"
               inputMode="numeric"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="0712345678"
+              placeholder="0712345678 or 0102345678"
               className="mt-1 h-11"
             />
           </div>
@@ -134,9 +139,9 @@ export function MoneySheet({ mode, onClose, defaultPhone, cash, onDone }: Props)
           )}
 
           <Button
-            variant={isDeposit ? "bet" : "brand"}
+            variant={isDeposit ? "deposit" : "withdraw"}
             className="h-12 w-full"
-            disabled={busy || value <= 0}
+            disabled={busy || value <= 0 || (isDeposit && value < MIN_DEPOSIT)}
             onClick={() => void submit()}
           >
             {busy && <Loader2 className="animate-spin" />}
