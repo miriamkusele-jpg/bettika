@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,12 @@ function AdminPage() {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [savingSlot, setSavingSlot] = useState<number | null>(null);
   const serverValues = useRef<Record<number, string>>({});
+  const [clock, setClock] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadFloat = useCallback(async () => {
     const { data } = await supabase.rpc("ensure_admin_wallet");
